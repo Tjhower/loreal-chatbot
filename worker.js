@@ -1,17 +1,25 @@
-// Copy this code into your Cloudflare Worker script- EDITED
+// CLOUFLARE WORKER SCRIPT- EDITED
 
 export default {
   async fetch(request, env) {
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Content-Type": "application/json",
     };
 
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders,
+      });
+    }
+
     // Handle CORS preflight requests
     if (request.method === "OPTIONS") {
-      return new Response(JSON.stringify({ ok: true }), {
+      return new Response(null, {
+        status: 204,
         headers: corsHeaders,
       });
     }
@@ -39,7 +47,9 @@ export default {
     const requestBody = {
       model: "gpt-4o",
       messages: userInput.messages,
-      max_tokens: 300,
+      max_tokens: 800,
+      temperature: 0.5,
+      frequency_penalty: 0.8,
     };
     let apiResponse;
     // Call OpenAI safely
