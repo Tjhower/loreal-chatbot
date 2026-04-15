@@ -31,7 +31,16 @@ function addMessage(content, sender) {
   messageDiv.classList.add("message", sender);
 
   messageDiv.textContent = content;
+
+  // Start hidden (for animation trigger)
+  messageDiv.style.opacity = 0;
+
   chatWindow.appendChild(messageDiv);
+
+  // Fade in
+  messageDiv.offsetHeight;
+  messageDiv.style.opacity = "";
+  messageDiv.classList.add("animate");
 
   // Auto scroll
   chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -57,12 +66,41 @@ chatForm.addEventListener("submit", async (e) => {
   // Clear input
   userInput.value = "";
 
-  //Show loading message
+  // Show loading message
   const loadingMsg = document.createElement("div");
   loadingMsg.classList.add("message", "bot");
-  loadingMsg.textContent = "Typing...";
+  loadingMsg.innerHTML = `
+  <div class="typing">
+    <span></span><span></span><span></span>
+  </div>
+  `;
   chatWindow.appendChild(loadingMsg);
   chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  // Typewriter effect
+  function typeWriter(element, text, speed = 20) {
+    let i = 0;
+    element.textContent = "";
+
+    function type() {
+      if (i < text.length) {
+        element.textContent += text.charAt(i);
+        i++;
+        setTimeout(type, speed);
+      }
+    }
+
+    type();
+  }
+  // Scroll-based darkening effect
+  window.addEventListener("scroll", () => {
+    const scrollY = window.scrollY;
+    const max = 300;
+
+    const opacity = Math.min(scrollY / max, 1);
+
+    document.body.style.setProperty("--scroll-dark", opacity);
+  });
 
   // When using Cloudflare, you'll need to POST a `messages` array in the body,
   // and handle the response using: data.choices[0].message.content
@@ -95,7 +133,13 @@ chatForm.addEventListener("submit", async (e) => {
 
     const botReply = data.choices[0].message.content;
     // Show bot reply
-    addMessage(botReply, "bot");
+    const botDiv = document.createElement("div");
+    botDiv.classList.add("message", "bot", "animate");
+
+    chatWindow.appendChild(botDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    typeWriter(botDiv, botReply);
     // Save assistant reply
     messages.push({
       role: "assistant",
