@@ -37,6 +37,9 @@ body {
 }
 
 /* —— HEADER —— */
+:root {
+  --header-height: 120px;
+}
 .site-header {
   width: 100%;
   text-align: center;
@@ -82,7 +85,7 @@ main {
 
 /* —— CHATBOX / LAYOUT —— */
 .chatbox {
-  margin: 40px 0;
+  margin: 80px 0;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -107,7 +110,8 @@ main {
     inset 0 0 15px rgba(255, 255, 255, 0.02);
   white-space: pre-line;
   position: relative;
-  padding-bottom: 80px; /* space for input */
+  padding-bottom: 100px; /* space for input */
+  scroll-behavior: smooth;
 }
 
 .chat-window::before {
@@ -183,7 +187,11 @@ main {
   margin-top: 18px;
   position: sticky;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 12px;
+  border-top: 1px solid rgba(227, 165, 53, 0.2);
 }
 
 .chat-form input {
@@ -320,6 +328,10 @@ main {
     bubbleFloat 3s ease-in-out infinite;
 }
 
+.logo img {
+  animation: logoGlow 4s ease-in-out infinite alternate;
+}
+
 .site-title {
   animation: goldGlow 3s ease-in-out infinite alternate;
 }
@@ -376,4 +388,72 @@ main {
 }
 .message:nth-child(4) {
   animation-delay: 0.2s;
+}
+
+/* —— PAGE RESPONSIVENESS —— */
+/* Mobile */
+@media (max-width: 600px) {
+  .page-wrapper {
+    width: 100%;
+    padding: 0 12px;
+    height: 100vh;
+  }
+  .site-header {
+    padding: 30px 0 10px;
+  }
+  .site-title {
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+  .chat-window {
+    padding: 16px;
+    font-size: 14px;
+  }
+  .message {
+    max-width: 90%;
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+  .chat-form {
+    padding: 10px;
+    gap: 8px;
+  }
+  .chat-form input {
+    font-size: 14px;
+    padding: 10px;
+  }
+  .chat-form button {
+    width: 44px;
+    height: 44px;
+  }
+  .chat-form button .material-icons {
+    font-size: 20px;
+  }
+}
+/* Tablet */
+@media (min-width: 601px) and (max-width: 900px) {
+  .page-wrapper {
+    width: 95%;
+  }
+  .site-title {
+    font-size: 24px;
+  }
+  .chat-window {
+    font-size: 15px;
+  }
+  .message {
+    max-width: 80%;
+  }
+}
+/* Desktop */
+@media (min-width: 1200px) {
+  .page-wrapper {
+    max-width: 1000px;
+  }
+  .chat-window {
+    font-size: 17px;
+  }
+  .message {
+    max-width: 70%;
+  }
 }

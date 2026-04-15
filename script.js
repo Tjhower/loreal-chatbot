@@ -1,114 +1,151 @@
-/* DOM elements */
+/* DOM ELEMENTS */
+
 const workerUrl = "https://openai-api-key.tjhower2004.workers.dev/";
 const chatForm = document.getElementById("chatForm");
 const userInput = document.getElementById("userInput");
 const chatWindow = document.getElementById("chatWindow");
 
-/* Store conversation */
+/* CONVERSATION STATE */
+
 let messages = [
   {
     role: "system",
     content: `
-You are a helpful beauty assistant focused ONLY on L’Oréal products, including makeup, skincare, haircare, and fragrance.
+You are a helpful beauty assistant focused ONLY on L’Oréal products.
 
-Your responsibilities:
-- Recommend L’Oréal products
-- Suggest personalized beauty routines
-- Explain ingredients and product benefits
-- Help users choose products based on their needs
+Maintain context of previous messages and build naturally.
 
 STRICT RULES:
-- If a question is NOT related to beauty, skincare, makeup, haircare, fragrance, or L’Oréal products, politely refuse.
-- Say something like: "I'm here to help with L’Oréal beauty products and routines. Let me know how I can assist with that!"
-- Keep responses friendly, concise, and helpful.
+- Only answer beauty-related questions
+- Keep responses concise and helpful
 `,
   },
 ];
 
-/* Helper: Add message to UI */
+/* limit context size */
+const MAX_MESSAGES = 12;
+
+/* UI HELPERS */
+
+function addMessage(content, sender) {
+  const messageDiv = document.createElement("div");
+  messageDiv.classList.add("message", sender);
+  messageDiv.textContent = content;
+}
+
 function addMessage(content, sender) {
   const messageDiv = document.createElement("div");
   messageDiv.classList.add("message", sender);
 
   messageDiv.textContent = content;
 
-  // Start hidden (for animation trigger)
-  messageDiv.style.opacity = 0;
+  // start hidden
+  messageDiv.style.opacity = "0";
 
   chatWindow.appendChild(messageDiv);
 
-  // Fade in
+  // trigger animation
   messageDiv.offsetHeight;
   messageDiv.style.opacity = "";
   messageDiv.classList.add("animate");
 
-  // Auto scroll
-  chatWindow.scrollTop = chatWindow.scrollHeight;
+  // scroll to bottom after append
+  scrollToBottom(true);
+  function scrollToBottom(force = false) {
+    const threshold = 120;
+
+    const isNearBottom =
+      chatWindow.scrollHeight - chatWindow.scrollTop <=
+      chatWindow.clientHeight + threshold;
+
+    if (force || isNearBottom) {
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+  }
 }
 
-// Set initial message
+/* typing dots */
+function createTypingIndicator() {
+  const div = document.createElement("div");
+  div.classList.add("message", "bot");
+
+  div.innerHTML = `
+    <div class="typing">
+      <span></span><span></span><span></span>
+    </div>
+  `;
+
+  return div;
+}
+
+/* typewriter effect */
+function typeWriter(element, text, speed = 18) {
+  let i = 0;
+  element.textContent = "";
+
+  function type() {
+    if (i < text.length) {
+      element.textContent += text.charAt(i);
+      i++;
+
+      //scroll during typing
+      scrollToBottom();
+
+      setTimeout(type, speed);
+    }
+  }
+
+  type();
+}
+
+/* scroll effect */
+
+window.addEventListener("scroll", () => {
+  const scrollY = window.scrollY;
+  const max = 300;
+  const opacity = Math.min(scrollY / max, 1);
+
+  document.body.style.setProperty("--scroll-dark", opacity);
+});
+
+/* INITIAL MESSAGE */
+
 addMessage("👋 Hello! Ask me about L’Oréal products or routines!", "bot");
 
-/* Handle form submit */
+/* FORM SUBMIT HANDLER */
+
 chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+
   const userText = userInput.value.trim();
   if (!userText) return;
-  // Show user message
+
+  /* show user message */
   addMessage(userText, "user");
 
-  // Add to conversation
+  /* store message */
   messages.push({
     role: "user",
     content: userText,
   });
 
-  // Clear input
+  /* trim history */
+  if (messages.length > MAX_MESSAGES) {
+    messages = [messages[0], ...messages.slice(-MAX_MESSAGES)];
+  }
+
   userInput.value = "";
 
-  // Show loading message
-  const loadingMsg = document.createElement("div");
-  loadingMsg.classList.add("message", "bot");
-  loadingMsg.innerHTML = `
-  <div class="typing">
-    <span></span><span></span><span></span>
-  </div>
-  `;
+  /* typing indicator */
+  const loadingMsg = createTypingIndicator();
   chatWindow.appendChild(loadingMsg);
-  chatWindow.scrollTop = chatWindow.scrollHeight;
+  scrollToBottom(true);
 
-  // Typewriter effect
-  function typeWriter(element, text, speed = 20) {
-    let i = 0;
-    element.textContent = "";
-
-    function type() {
-      if (i < text.length) {
-        element.textContent += text.charAt(i);
-        i++;
-        setTimeout(type, speed);
-      }
-    }
-
-    type();
-  }
-  // Scroll-based darkening effect
-  window.addEventListener("scroll", () => {
-    const scrollY = window.scrollY;
-    const max = 300;
-
-    const opacity = Math.min(scrollY / max, 1);
-
-    document.body.style.setProperty("--scroll-dark", opacity);
-  });
-
-  // When using Cloudflare, you'll need to POST a `messages` array in the body,
-  // and handle the response using: data.choices[0].message.content
   try {
     const response = await fetch(workerUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json", // Content type to JSON
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         messages: messages,
@@ -116,14 +153,15 @@ chatForm.addEventListener("submit", async (e) => {
     });
 
     const text = await response.text();
+
     let data;
     try {
       data = JSON.parse(text);
-    } catch (error) {
+    } catch {
       console.error("Raw response:", text);
-      throw new Error("Invalid JSON from server");
+      throw new Error("Invalid JSON");
     }
-    // Remove loading message
+
     chatWindow.removeChild(loadingMsg);
 
     if (!data.choices || !data.choices[0]) {
@@ -132,15 +170,25 @@ chatForm.addEventListener("submit", async (e) => {
     }
 
     const botReply = data.choices[0].message.content;
-    // Show bot reply
+
+    /* create bot message container */
     const botDiv = document.createElement("div");
-    botDiv.classList.add("message", "bot", "animate");
+    botDiv.classList.add("message", "bot");
 
     chatWindow.appendChild(botDiv);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
 
+    /* animate in */
+    botDiv.style.opacity = "0";
+    botDiv.offsetHeight;
+    botDiv.style.opacity = "";
+    botDiv.classList.add("animate");
+
+    scrollToBottom(true);
+
+    /* typewriter */
     typeWriter(botDiv, botReply);
-    // Save assistant reply
+
+    /* store reply */
     messages.push({
       role: "assistant",
       content: botReply,
